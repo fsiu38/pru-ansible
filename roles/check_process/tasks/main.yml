@@ -1,0 +1,25 @@
+---
+- name: Build expected process list
+  set_fact:
+    expected_processes: "{{ (common_processes + extra_processes) | unique | list }}"
+
+- name: Check each process by exact process name
+  command:
+    argv:
+      - pgrep
+      - -x
+      - "{{ item }}"
+  loop: "{{ expected_processes }}"
+  register: process_checks
+  changed_when: false
+  failed_when: false
+
+- name: Assert all expected processes exist
+  assert:
+    that:
+      - item.rc == 0
+    success_msg: "Process {{ item.item }} is running"
+    fail_msg: "Process {{ item.item }} is not running (pgrep rc={{ item.rc }})"
+  loop: "{{ process_checks.results }}"
+  loop_control:
+    label: "{{ item.item }}"

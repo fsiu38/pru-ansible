@@ -1,0 +1,3 @@
+---
+# web02 uses only the processes shared by its group.
+extra_processes: []
