@@ -1,41 +1,52 @@
+# IWS_before.yml
+
 ---
-- name: Record and stop IWS before patching
-  hosts: all
-  gather_facts: false
+#IWS FTA Test Linux 前 OSパッチ前作業 FTA Limit状態記録と制限解除へ
+- hosts: mdm_dev
+  become: false
+  gather_facts: no
   tasks:
-    - name: Validate IWS command configuration
-      assert:
-        that:
-          - (iws_status_argv | default([]) | length) > 0
-          - (iws_stop_argv | default([]) | length) > 0
-        fail_msg: Configure iws_status_argv and iws_stop_argv in Tower inventory variables.
+    - block:
+        - name: Control IWSFTA WS Limit Control (Before)
+          include_role:
+            name: Workstation_control/fta_ws_limit_control_before
+          vars:
+            fta_target_ws: "{{ item }}"
+          loop: "{{ groups['fta_ws'] }}"
+      rescue:
+        - name: Control IWSFTA WS Limit Control (Before) failure
+          ansible.builtin.fail:
+            msg: "Control IWSFTA WS Limit Control (Before) failed! ({{ ansible_failed_result.item | default('unknown') }})"
 
-    - name: Check IWS (must be running before maintenance)
-      command:
-        argv: "{{ iws_status_argv }}"
-      register: iws_before
-      changed_when: false
+# FTA AgentとUnlink
+- hosts: mdm_dev
+  become: false
+  gather_facts: no
+  tasks:
+    - block:
+        - name: FTA Unlink
+          include_role:
+            name: Workstation_control/fta_unlink
+          vars:
+            fta_target_ws: "{{ item }}"
+          loop: "{{ groups['fta_ws'] }}"
+      rescue:
+        - name: FTA Unlink failure
+          ansible.builtin.fail:
+            msg: "FTA Unlink failed! ({{ ansible_failed_result.item | default('unknown') }})"
 
-    - name: Save IWS status on target host
-      copy:
-        content: "{{ {'stdout': iws_before.stdout, 'rc': iws_before.rc} | to_nice_json }}\n"
-        dest: "~/tmp_iws_before.txt"
-        mode: '0600'
-
-    - name: Display IWS status
-      debug:
-        var: iws_before.stdout
-
-    - name: Stop IWS
-      command:
-        argv: "{{ iws_stop_argv }}"
-
-    - name: Wait until IWS is stopped
-      command:
-        argv: "{{ iws_status_argv }}"
-      register: iws_stopped
-      changed_when: false
-      failed_when: iws_stopped.rc not in [0, (iws_stopped_rc | default(3) | int)]
-      until: iws_stopped.rc == (iws_stopped_rc | default(3) | int)
-      retries: 12
-      delay: 5
+# FTA停止
+- hosts: fta_dev
+  become: yes
+  become_method: sudo
+  become_user: root
+  gather_facts: no
+  tasks:
+    - block:
+        - name: Stop IWSFTA
+          include_role:
+            name: Workstation_control/stop_iwsfta
+      rescue:
+        - name: Stop IWSFTA failure
+          ansible.builtin.fail:
+            msg: "Stop IWSFTA failed"

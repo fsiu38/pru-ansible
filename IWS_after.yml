@@ -1,47 +1,103 @@
+# IWS_after.yml
+
 ---
-- name: Start IWS and compare with saved status
-  hosts: all
-  gather_facts: false
+# IWSFTA開始
+- hosts: fta_dev
+  become: yes
+  become_method: sudo
+  become_user: root
+  gather_facts: no
   tasks:
-    - name: Validate IWS command configuration
-      assert:
-        that:
-          - (iws_status_argv | default([]) | length) > 0
-          - (iws_start_argv | default([]) | length) > 0
-        fail_msg: Configure iws_status_argv and iws_start_argv in Tower inventory variables.
+    - block:
+        - name: Start IWSFTA
+          include_role:
+            name: Workstation_control/start_iwsfta
+      rescue:
+        - name: Start IWSFTA failure
+          debug:
+            msg: "Start IWSFTA failed!"
+        - meta: end_play
 
-    - name: Read saved IWS status
-      slurp:
-        src: "~/tmp_iws_before.txt"
-      register: saved_iws
+# FTA AgentとLink
+- hosts: mdm_dev
+  become: false
+  gather_facts: no
+  tasks:
+    - block:
+        - name: FTA Link
+          include_role:
+            name: Workstation_control/fta_link
+          vars:
+            fta_target: "{{ item }}"
+          loop: "{{ groups['fta_ws'] }}"
+      rescue:
+        - name: FTA Link failure
+          debug:
+            msg: "FTA Link failed! ({{ ansible_failed_result.item | default('unknown') }})"
+        - meta: end_play
 
-    - name: Decode saved status
-      set_fact:
-        iws_baseline: "{{ saved_iws.content | b64decode | from_json }}"
+# IWSFTA Process Check
+- hosts: fta_dev
+  become: false
+  gather_facts: no
+  tasks:
+    - block:
+        - name: IWSFTA Process Check
+          include_role:
+            name: Workstation_control/fta_process_check
+      rescue:
+        - name: IWSFTA Process Check failure
+          debug:
+            msg: "IWSFTA Process Check failed!"
+        - meta: end_play
 
-    - name: Start IWS
-      command:
-        argv: "{{ iws_start_argv }}"
+# IWSDA Process Check
+- hosts: da_dev
+  become: false
+  gather_facts: no
+  tasks:
+    - block:
+        - name: IWSDA Process Check
+          include_role:
+            name: Workstation_control/da_process_check
+      rescue:
+        - name: IWSDA Process Check failure
+          debug:
+            msg: "IWSDA Process Check failed!"
+        - meta: end_play
 
-    - name: Wait until IWS is running
-      command:
-        argv: "{{ iws_status_argv }}"
-      register: iws_after
-      changed_when: false
-      until: iws_after.rc == 0
-      retries: 12
-      delay: 5
+# FTA Limit状態を作業前に戻す
+- hosts: mdm_dev
+  become: false
+  gather_facts: no
+  tasks:
+    - block:
+        - name: Control IWSFTA WS Limit Control (After)
+          include_role:
+            name: Workstation_control/fta_ws_limit_control_after
+          vars:
+            fta_target_ws: "{{ item }}"
+          loop: "{{ groups['fta_ws'] }}"
+      rescue:
+        - name: Control IWSFTA WS Limit Control (After) failure
+          debug:
+            msg: "Control IWSFTA WS Limit Control (After) failed!"
+        - meta: end_play
 
-    - name: Display status comparison (PIDs and timestamps may differ)
-      debug:
-        msg:
-          before: "{{ iws_baseline.stdout }}"
-          after: "{{ iws_after.stdout }}"
-          output_different: "{{ iws_baseline.stdout != iws_after.stdout }}"
-
-    - name: Verify running status matches baseline
-      assert:
-        that:
-          - iws_after.rc == iws_baseline.rc
-          - iws_after.rc == 0
-        success_msg: IWS is running as before patching.
+# FTA RMSTDLIST実行
+- hosts: mdm_dev
+  become: false
+  gather_facts: no
+  tasks:
+    - block:
+        - name: RMSTDLISTの実行
+          include_role:
+            name: Workstation_control/after_fta_check
+          vars:
+            JSControl: "{{ item }}"
+          loop: "{{ IWSFTA_Aftercheck_JOB }}"
+      rescue:
+        - name: RMSTDLISTの実行 failure
+          ansible.builtin.fail:
+            msg: "RMSTDLISTの実行 failed! ({{ ansible_failed_result.item | default('unknown') }})"
+        - meta: end_play
