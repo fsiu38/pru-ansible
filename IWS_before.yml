@@ -1,0 +1,41 @@
+---
+- name: Record and stop IWS before patching
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Validate IWS command configuration
+      assert:
+        that:
+          - (iws_status_argv | default([]) | length) > 0
+          - (iws_stop_argv | default([]) | length) > 0
+        fail_msg: Configure iws_status_argv and iws_stop_argv in Tower inventory variables.
+
+    - name: Check IWS (must be running before maintenance)
+      command:
+        argv: "{{ iws_status_argv }}"
+      register: iws_before
+      changed_when: false
+
+    - name: Save IWS status on target host
+      copy:
+        content: "{{ {'stdout': iws_before.stdout, 'rc': iws_before.rc} | to_nice_json }}\n"
+        dest: "~/tmp_iws_before.txt"
+        mode: '0600'
+
+    - name: Display IWS status
+      debug:
+        var: iws_before.stdout
+
+    - name: Stop IWS
+      command:
+        argv: "{{ iws_stop_argv }}"
+
+    - name: Wait until IWS is stopped
+      command:
+        argv: "{{ iws_status_argv }}"
+      register: iws_stopped
+      changed_when: false
+      failed_when: iws_stopped.rc not in [0, (iws_stopped_rc | default(3) | int)]
+      until: iws_stopped.rc == (iws_stopped_rc | default(3) | int)
+      retries: 12
+      delay: 5

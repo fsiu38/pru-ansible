@@ -1,0 +1,25 @@
+---
+- name: Compare system state after OS patching
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Read saved kernel information
+      slurp:
+        src: "~/tmp_os_before.txt"
+      register: saved_kernel
+
+    - name: Read current kernel information
+      command: uname -a
+      register: kernel_after
+      changed_when: false
+
+    - name: Compare kernel information (changes are expected after patching)
+      debug:
+        msg:
+          before: "{{ (saved_kernel.content | b64decode) | trim }}"
+          after: "{{ kernel_after.stdout }}"
+          different: "{{ ((saved_kernel.content | b64decode) | trim) != kernel_after.stdout }}"
+
+    - name: Check expected processes
+      include_role:
+        name: check_process

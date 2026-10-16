@@ -1,0 +1,23 @@
+---
+- name: Record system state before OS patching
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Read kernel information
+      command: uname -a
+      register: kernel_before
+      changed_when: false
+
+    - name: Save kernel information on target host
+      copy:
+        content: "{{ kernel_before.stdout }}\n"
+        dest: "~/tmp_os_before.txt"
+        mode: '0600'
+
+    - name: Display kernel information
+      debug:
+        var: kernel_before.stdout
+
+    - name: Check expected processes
+      include_role:
+        name: check_process

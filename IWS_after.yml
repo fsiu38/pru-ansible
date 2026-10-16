@@ -1,0 +1,47 @@
+---
+- name: Start IWS and compare with saved status
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Validate IWS command configuration
+      assert:
+        that:
+          - (iws_status_argv | default([]) | length) > 0
+          - (iws_start_argv | default([]) | length) > 0
+        fail_msg: Configure iws_status_argv and iws_start_argv in Tower inventory variables.
+
+    - name: Read saved IWS status
+      slurp:
+        src: "~/tmp_iws_before.txt"
+      register: saved_iws
+
+    - name: Decode saved status
+      set_fact:
+        iws_baseline: "{{ saved_iws.content | b64decode | from_json }}"
+
+    - name: Start IWS
+      command:
+        argv: "{{ iws_start_argv }}"
+
+    - name: Wait until IWS is running
+      command:
+        argv: "{{ iws_status_argv }}"
+      register: iws_after
+      changed_when: false
+      until: iws_after.rc == 0
+      retries: 12
+      delay: 5
+
+    - name: Display status comparison (PIDs and timestamps may differ)
+      debug:
+        msg:
+          before: "{{ iws_baseline.stdout }}"
+          after: "{{ iws_after.stdout }}"
+          output_different: "{{ iws_baseline.stdout != iws_after.stdout }}"
+
+    - name: Verify running status matches baseline
+      assert:
+        that:
+          - iws_after.rc == iws_baseline.rc
+          - iws_after.rc == 0
+        success_msg: IWS is running as before patching.
