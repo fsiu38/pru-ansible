@@ -1,0 +1,85 @@
+---
+# Gate runs on the Tower controller, not on target hosts.
+# maintenance_date is the local maintenance START date, e.g. 2026-10-18.
+# wait_target_time accepts 00:00..23:59 or 24:00..24:59 (next day).
+- name: Validate maintenance gate parameters
+  assert:
+    that:
+      - "(maintenance_date | default('') | string) is match('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')"
+      - "(wait_target_time | default('') | string) is match('^([01][0-9]|2[0-4]):[0-5][0-9]$')"
+      - "wait_timezone == 'Asia/Tokyo'"
+      - "(wait_max_seconds | int) > 0"
+      - "(wait_max_late_seconds | int) >= 0"
+    fail_msg: "Set maintenance_date=YYYY-MM-DD and wait_target_time=HH:MM (24:05 means next-day 00:05 JST)."
+    quiet: yes
+
+- name: Resolve calendar date including 24:xx (GNU date)
+  command:
+    argv:
+      - date
+      - -d
+      - "{{ maintenance_date }} +{{ (wait_target_time.split(':')[0] | int) // 24 }} day"
+      - +%Y-%m-%d
+  environment:
+    TZ: "{{ wait_timezone }}"
+  register: wait_gate_date
+  changed_when: false
+
+- name: Convert maintenance gate to Unix epoch
+  command:
+    argv:
+      - date
+      - -d
+      - "{{ wait_gate_date.stdout }} {{ '%02d' | format((wait_target_time.split(':')[0] | int) % 24) }}:{{ wait_target_time.split(':')[1] }}:00"
+      - +%s
+  environment:
+    TZ: "{{ wait_timezone }}"
+  register: wait_gate_epoch
+  changed_when: false
+
+- name: Read current Unix epoch
+  command:
+    argv:
+      - date
+      - +%s
+  register: wait_now_epoch
+  changed_when: false
+
+- name: Calculate remaining wait in seconds
+  set_fact:
+    wait_remaining_seconds: "{{ [((wait_gate_epoch.stdout | int) - (wait_now_epoch.stdout | int)), 0] | max }}"
+
+- name: Reject unsafe or stale maintenance windows
+  assert:
+    that:
+      - "((wait_gate_epoch.stdout | int) - (wait_now_epoch.stdout | int)) <= (wait_max_seconds | int)"
+      - "((wait_now_epoch.stdout | int) - (wait_gate_epoch.stdout | int)) <= (wait_max_late_seconds | int)"
+    fail_msg: "Maintenance gate is too far in the future or too late; check maintenance_date and wait_target_time."
+    quiet: yes
+
+- name: Show maintenance gate
+  debug:
+    msg: "Target {{ wait_gate_date.stdout }} {{ '%02d' | format((wait_target_time.split(':')[0] | int) % 24) }}:{{ wait_target_time.split(':')[1] }} JST; wait {{ wait_remaining_seconds }} seconds."
+
+- name: Pause until scheduled gate
+  pause:
+    seconds: "{{ wait_remaining_seconds | int }}"
+    prompt: "Waiting until {{ wait_target_time }} JST (maintenance date {{ maintenance_date }})"
+  when: (wait_remaining_seconds | int) > 0
+
+# pause can be interrupted by an operator, so verify before allowing downstream jobs.
+- name: Recheck controller clock after waiting
+  command:
+    argv:
+      - date
+      - +%s
+  register: wait_after_epoch
+  changed_when: false
+
+- name: Do not continue before the scheduled gate
+  assert:
+    that:
+      - "(wait_after_epoch.stdout | int) >= (wait_gate_epoch.stdout | int)"
+    fail_msg: "The pause was interrupted early or the controller clock changed; downstream job is blocked."
+    success_msg: "Maintenance gate reached. The next Tower Workflow job may start."
+    quiet: yes

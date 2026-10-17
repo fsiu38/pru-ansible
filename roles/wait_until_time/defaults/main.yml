@@ -1,0 +1,7 @@
+---
+# Ansible 2.9 / Tower. The controller must provide GNU date and Asia/Tokyo tzdata.
+wait_timezone: Asia/Tokyo
+# Prevent accidental long-running Tower jobs (24 hours maximum ahead).
+wait_max_seconds: 86400
+# Fail closed when this maintenance gate is more than one hour late.
+wait_max_late_seconds: 3600

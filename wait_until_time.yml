@@ -1,10 +1,13 @@
 ---
-# TODO: Implement Wait Until Time for the OS patch workflow.
-# Placeholder only. Do not enable in Tower until implemented and tested.
-- name: Wait Until Time (not implemented)
+# Run as a Tower Job Template. Supply the two required extra vars:
+# maintenance_date: "2026-10-18" (maintenance START date in JST)
+# wait_target_time: "24:05"    (next-day 00:05 JST)
+# Connect the next Workflow Job on SUCCESS only.
+- name: Wait for scheduled maintenance gate (JST)
   hosts: localhost
+  connection: local
   gather_facts: no
   tasks:
-    - name: Prevent unimplemented workflow step from succeeding
-      fail:
-        msg: "Wait Until Time is not implemented yet."
+    - name: Enforce wait until maintenance time
+      include_role:
+        name: wait_until_time
