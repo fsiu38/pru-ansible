@@ -1,0 +1,11 @@
+---
+# OS Patch workflow job (placeholder).
+# The actual OS patch implementation has not been provided.
+# Do not enable this Job Template in production until implemented and tested.
+- name: OS Patch (not implemented)
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Prevent unimplemented OS patch step from succeeding
+      fail:
+        msg: "OS Patch is not implemented yet. Configure the actual patch procedure before running this job."
