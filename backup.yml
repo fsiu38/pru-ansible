@@ -1,0 +1,10 @@
+---
+# TODO: Implement Backup for the OS patch workflow.
+# Placeholder only. Do not enable in Tower until implemented and tested.
+- name: Backup (not implemented)
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Prevent unimplemented workflow step from succeeding
+      fail:
+        msg: "Backup is not implemented yet."
