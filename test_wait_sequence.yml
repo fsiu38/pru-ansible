@@ -1,0 +1,54 @@
+---
+# Read-only sequential test for Ansible Tower 2.9.
+# Required extra var: maintenance_date (YYYY-MM-DD, JST maintenance start date).
+# Optional: maintenance_hosts (default localhost, or a real inventory host group).
+# Optional: uname_at (default 23:00), storage_at (default 24:05, next-day 00:05).
+- name: Wait, inspect kernel, then wait and inspect filesystem storage
+  hosts: "{{ maintenance_hosts | default('localhost') }}"
+  gather_facts: no
+  any_errors_fatal: yes
+  strategy: linear
+  tasks:
+    - name: Wait until 23:00 JST before uname
+      include_role:
+        name: wait_until_time
+        apply:
+          delegate_to: localhost
+          run_once: yes
+      vars:
+        wait_target_time: "{{ uname_at | default('23:00') }}"
+      run_once: yes
+
+    - name: Run uname -a on selected hosts
+      command:
+        argv:
+          - uname
+          - -a
+      register: uname_check
+      changed_when: false
+
+    - name: Display uname result
+      debug:
+        var: uname_check.stdout
+
+    - name: Wait until 24:05 JST before storage check
+      include_role:
+        name: wait_until_time
+        apply:
+          delegate_to: localhost
+          run_once: yes
+      vars:
+        wait_target_time: "{{ storage_at | default('24:05') }}"
+      run_once: yes
+
+    - name: Check filesystem disk usage on selected hosts
+      command:
+        argv:
+          - df
+          - -h
+      register: storage_check
+      changed_when: false
+
+    - name: Display filesystem disk usage
+      debug:
+        var: storage_check.stdout_lines

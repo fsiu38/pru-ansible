@@ -89,3 +89,44 @@ ansible-playbook -i localhost, -c local wait_until_time.yml \
 ```
 
 Test cases: future gate (wait), past gate within 1 hour (pass), stale gate (fail), invalid `24:60` (fail), `24:05` next-day mapping, and manual early `pause` interruption (fail).
+
+
+## Sequential read-only test: uname at 23:00, df at 24:05
+
+The separate [`test_wait_sequence.yml`](../../test_wait_sequence.yml) demonstrates calling the same role **twice in one Playbook**, then running commands on selected Linux hosts:
+
+```text
+Wait until maintenance_date 23:00 JST
+  → uname -a (all selected hosts)
+  → Wait until maintenance_date + 1 day 00:05 JST (24:05)
+  → df -h (all selected hosts)
+```
+
+This test defaults to `localhost` and only runs **read-only** commands. The `wait_until_time` role is delegated to the Tower controller and invoked once using `apply: delegate_to: localhost` and `run_once`; `uname` and `df` run on the selected hosts. Using the **same hosts pattern for the entire Play** avoids the problem of separate localhost-only plays being excluded by a Tower host Limit.
+
+Example: test on controller (change the date to your actual maintenance start date; do **not** use this particular past date as an active window):
+
+```bash
+ansible-playbook -i localhost, -c local test_wait_sequence.yml \
+  -e '{"maintenance_date":"2026-10-18"}'
+```
+
+To run on real Linux targets, configure actual credentials/inventory and pass their host group or host pattern:
+
+```bash
+ansible-playbook -i /path/to/real-inventory test_wait_sequence.yml \
+  -e '{"maintenance_date":"2026-10-18","maintenance_hosts":"linux_patch_targets"}'
+```
+
+For quick tests, `uname_at` and `storage_at` can override the two default times:
+
+```yaml
+maintenance_date: "2026-10-18"
+maintenance_hosts: "linux_patch_targets"
+uname_at: "23:00"
+storage_at: "24:05"
+```
+
+If a command fails on any selected host, `any_errors_fatal: yes` prevents advancing to the next time-gated action. The second gate only opens **after all selected hosts complete `uname`**, and no earlier than 24:05 JST. The role's lateness limit still applies. The `df -h` check reports filesystem space usage; it does not test disk integrity or storage hardware health.
+
+**Test status:** YAML structure checked, but not executed against Ansible 2.9/Tower or real target hosts. Do not merge before a syntax check, controller clock validation, multi-host test and a short-interval end-to-end dry run.
