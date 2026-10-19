@@ -1,0 +1,7 @@
+---
+# Configure these in Tower inventory group_vars/host_vars.
+# Values are process names or command-line fragments, never server identifiers.
+check_process_by_group: {}
+check_process_host: {}
+check_process_required_mounts: []
+# Require explicit expectations; never silently pass an empty check.
