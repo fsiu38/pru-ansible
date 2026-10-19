@@ -1,9 +1,0 @@
----
-# Group mapping is supplied by inventory group_vars or Tower extra vars.
-# Example: process_by_group: {dev_print: [{name: netman, match: exact}]}
-process_by_group: {}
-# Host-specific additions (host_vars/<hostname>.yml).
-host_processes: []
-# Backward-compatible inputs used by earlier playbooks.
-common_processes: []
-extra_processes: []
