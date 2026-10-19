@@ -42,7 +42,7 @@
       include_role:
         name: Workstation_control/da_process_check
 
-# FTA Limit状態を作業前に戻す
+# Restore FTA WS limit, then run RMSTDLIST on MDM
 - hosts: mdm_dev
   become: false
   gather_facts: no
@@ -55,12 +55,6 @@
         fta_target_ws: "{{ item }}"
       loop: "{{ groups['fta_ws'] }}"
 
-# FTA RMSTDLIST実行
-- hosts: mdm_dev
-  become: false
-  gather_facts: no
-  any_errors_fatal: true
-  tasks:
     - name: RMSTDLISTの実行
       include_role:
         name: Workstation_control/after_fta_check
