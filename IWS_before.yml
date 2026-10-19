@@ -10,9 +10,9 @@
     - name: Control IWSFTA WS Limit Control (Before)
       include_role:
         name: Workstation_control/fta_ws_limit_control_before
-        vars:
-          fta_target_ws: "{{ item }}"
-        loop: "{{ groups['fta_ws'] }}"
+      vars:
+        fta_target_ws: "{{ item }}"
+      loop: "{{ groups['fta_ws'] }}"
 
 # FTA AgentとUnlink
 - hosts: mdm_dev
@@ -23,9 +23,9 @@
     - name: FTA Unlink
       include_role:
         name: Workstation_control/fta_unlink
-        vars:
-          fta_target_ws: "{{ item }}"
-        loop: "{{ groups['fta_ws'] }}"
+      vars:
+        fta_target_ws: "{{ item }}"
+      loop: "{{ groups['fta_ws'] }}"
 
 # FTA停止
 - hosts: fta_dev
