@@ -1,10 +1,75 @@
 ---
-- name: check process status
+- name: Run existing process inspection script
   shell: /prustaff/dsops/reboot/hanyo/check_process.sh
-  register: result
+  register: check_process_result
   check_mode: false
   changed_when: false
+  failed_when: false
+  no_log: true
 
-- name: debug check_process
+- name: Resolve configured groups
+  set_fact:
+    check_process_matched_groups: "{{ group_names | intersect(check_process_by_group.keys() | list) }}"
+
+- name: Build required process patterns
+  set_fact:
+    check_process_expected: >-
+      {{
+        (
+          check_process_matched_groups
+          | map('extract', check_process_by_group)
+          | list | flatten
+        ) + (check_process_host | default({})).get('processes', [])
+      }}
+    check_process_mount_expected: >-
+      {{
+        check_process_required_mounts
+        + (check_process_host | default({})).get('mounts', [])
+      }}
+
+- name: Reject missing check configuration
+  assert:
+    that:
+      - (check_process_expected | length + check_process_mount_expected | length) > 0
+    fail_msg: "No checks configured for target host; refusing to pass."
+
+- name: Require successful script execution
+  assert:
+    that:
+      - check_process_result.rc == 0
+    fail_msg: "Process inspection script failed; raw output withheld to protect host identifiers."
+
+- name: Check expected process command lines in script output
+  assert:
+    that:
+      - >-
+        (
+          check_process_result.stdout_lines
+          | select('search', '(^|[[:space:]])' ~ (item | regex_escape) ~ '([[:space:]]|$)')
+          | list | length
+        ) > 0
+    fail_msg: "Required process missing from inspection output (details withheld)."
+    success_msg: "Required process present in inspection output."
+  loop: "{{ check_process_expected }}"
+  loop_control:
+    label: "process check"
+  no_log: true
+
+- name: Check required NAS mount paths in script output
+  assert:
+    that:
+      - >-
+        (
+          check_process_result.stdout_lines
+          | select('search', '[[:space:]]' ~ (item | regex_escape) ~ '[[:space:]]*$')
+          | list | length
+        ) > 0
+    fail_msg: "Required NAS mount not listed in inspection output."
+  loop: "{{ check_process_mount_expected }}"
+  loop_control:
+    label: "mount check"
+  no_log: true
+
+- name: Show sanitized check summary
   debug:
-    var: result.stdout_lines
+    msg: "Inspection passed: {{ check_process_expected | length }} process patterns, {{ check_process_mount_expected | length }} mount entries. Host details withheld."
