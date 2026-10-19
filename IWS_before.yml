@@ -29,9 +29,6 @@
 
 # FTA停止
 - hosts: fta_dev
-  become: yes
-  become_method: sudo
-  become_user: root
   gather_facts: no
   any_errors_fatal: true
   tasks:
