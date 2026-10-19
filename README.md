@@ -4,6 +4,15 @@
 
 本 Repository 用嚟整理 OS Patch 維護流程。目標係用 Ansible Tower Workflow 串連 9 個 Job Template；目前只完成部分 Playbook，其餘係 **故意會失敗嘅佔位檔案**，唔可以直接作正式維護使用。
 
+## Tower Privilege Escalation 約定（重要）
+
+**本專案假設 Ansible Tower Job Template 已啟用 Privilege Escalation（sudo → root）**，並由 Tower 管理登入憑證及提權設定。呢個係專案部署前提，**唔代表已核實 Tower 實際設定**；部署前必須確認。Repository 不需要另建 `ansible.cfg` 去重複設定。
+
+- Playbook 預設繼承 Tower 提權設定；**不要重複加入** `become: true`、`become_method: sudo`、`become_user: root`。
+- **必須以原登入帳戶執行**嘅 IWS/MDM/Process Check Play，保留 `become: false`，明確覆蓋 Tower 提權；不可一律刪除。
+- 如將來 Tower 設定改變，必須重新審核 Playbook 權限；唔好假設刪除顯式提權仍會以 root 執行。
+- 新 Playbook / Role 亦遵守同一約定，避免分散重複嘅權限設定。
+
 ## 預定 Workflow 次序
 
 | # | Playbook | 工作 | 目前狀態 |
