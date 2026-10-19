@@ -1,0 +1,12 @@
+# シェルは標準
+ansible_shell_executable: /bin/bash
+
+# TWSENV
+tws_env_load: ". /opt/TWA/TWA/TWS/tws_env.sh >/dev/null 2>&1"
+
+# conmanコマンド
+conman_cmd: 'export LANG=ja_JP.utf8 && /opt/TWA/TWA/TWS/bin/conman'
+
+# TWSFTA稼働確認ジョブ処理
+IWSFTA_Aftercheck_JOB:
+  - JPTDC1LD224#TWS_RMSTDLISTPU.TWS_RMSTDLIST-U-G

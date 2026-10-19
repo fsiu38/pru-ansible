@@ -1,0 +1,24 @@
+# このホストはkshで対応する
+ansible_shell_executable: /usr/bin/ksh
+
+# IWSFTA
+fta_stop_cmd: "/tools/tws/tws_fta86_stop.ksh"
+fta_start_cmd: "/tools/tws/tws_fta86_start.ksh"
+
+fta_process_chk_cmd: >
+  pgrep -af "/opt/TWA86/TWS/bin/" | awk '{print $2}' | xargs -n1 basename | grep -v "ksh" | grep -v "JobManager" || true
+
+required_fta_processes:
+  - netman
+  - batchman
+  - mailman
+  - jobman
+  - writer
+  - monman
+
+required_fta_processes_unlinked:
+  - netman
+  - batchman
+  - mailman
+  - jobman
+  - monman

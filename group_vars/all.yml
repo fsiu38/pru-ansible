@@ -1,0 +1,2 @@
+# このホストはkshで対応する
+ansible_shell_executable: /usr/bin/ksh
