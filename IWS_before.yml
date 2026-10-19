@@ -5,35 +5,27 @@
 - hosts: mdm_dev
   become: false
   gather_facts: no
+  any_errors_fatal: true
   tasks:
-    - block:
-        - name: Control IWSFTA WS Limit Control (Before)
-          include_role:
-            name: Workstation_control/fta_ws_limit_control_before
-          vars:
-            fta_target_ws: "{{ item }}"
-          loop: "{{ groups['fta_ws'] }}"
-      rescue:
-        - name: Control IWSFTA WS Limit Control (Before) failure
-          ansible.builtin.fail:
-            msg: "Control IWSFTA WS Limit Control (Before) failed! ({{ ansible_failed_result.item | default('unknown') }})"
+    - name: Control IWSFTA WS Limit Control (Before)
+      include_role:
+        name: Workstation_control/fta_ws_limit_control_before
+        vars:
+          fta_target_ws: "{{ item }}"
+        loop: "{{ groups['fta_ws'] }}"
 
 # FTA AgentとUnlink
 - hosts: mdm_dev
   become: false
   gather_facts: no
+  any_errors_fatal: true
   tasks:
-    - block:
-        - name: FTA Unlink
-          include_role:
-            name: Workstation_control/fta_unlink
-          vars:
-            fta_target_ws: "{{ item }}"
-          loop: "{{ groups['fta_ws'] }}"
-      rescue:
-        - name: FTA Unlink failure
-          ansible.builtin.fail:
-            msg: "FTA Unlink failed! ({{ ansible_failed_result.item | default('unknown') }})"
+    - name: FTA Unlink
+      include_role:
+        name: Workstation_control/fta_unlink
+        vars:
+          fta_target_ws: "{{ item }}"
+        loop: "{{ groups['fta_ws'] }}"
 
 # FTA停止
 - hosts: fta_dev
@@ -41,12 +33,8 @@
   become_method: sudo
   become_user: root
   gather_facts: no
+  any_errors_fatal: true
   tasks:
-    - block:
-        - name: Stop IWSFTA
-          include_role:
-            name: Workstation_control/stop_iwsfta
-      rescue:
-        - name: Stop IWSFTA failure
-          ansible.builtin.fail:
-            msg: "Stop IWSFTA failed"
+    - name: Stop IWSFTA
+      include_role:
+        name: Workstation_control/stop_iwsfta
