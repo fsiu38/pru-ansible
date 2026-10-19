@@ -22,9 +22,9 @@
     - name: FTA Link
       include_role:
         name: Workstation_control/fta_link
-        vars:
-          fta_target: "{{ item }}"
-        loop: "{{ groups['fta_ws'] }}"
+      vars:
+        fta_target: "{{ item }}"
+      loop: "{{ groups['fta_ws'] }}"
 
 # IWSFTA Process Check
 - hosts: fta_dev
@@ -55,9 +55,9 @@
     - name: Control IWSFTA WS Limit Control (After)
       include_role:
         name: Workstation_control/fta_ws_limit_control_after
-        vars:
-          fta_target_ws: "{{ item }}"
-        loop: "{{ groups['fta_ws'] }}"
+      vars:
+        fta_target_ws: "{{ item }}"
+      loop: "{{ groups['fta_ws'] }}"
 
 # FTA RMSTDLIST実行
 - hosts: mdm_dev
@@ -68,6 +68,6 @@
     - name: RMSTDLISTの実行
       include_role:
         name: Workstation_control/after_fta_check
-        vars:
-          JSControl: "{{ item }}"
-        loop: "{{ IWSFTA_Aftercheck_JOB }}"
+      vars:
+        JSControl: "{{ item }}"
+      loop: "{{ IWSFTA_Aftercheck_JOB }}"
