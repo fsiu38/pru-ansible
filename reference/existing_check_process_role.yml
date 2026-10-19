@@ -1,0 +1,12 @@
+---
+# Transcribed from the existing unix_common/playbooks/roles/check_process/tasks/main.yml screenshot.
+# Reference only; does not replace roles/check_process/tasks/main.yml.
+- name: check process status
+  shell: /prustaff/dsops/reboot/hanyo/check_process.sh
+  register: result
+  check_mode: false
+  changed_when: false
+
+- name: debug check_process
+  debug:
+    var: result.stdout_lines
