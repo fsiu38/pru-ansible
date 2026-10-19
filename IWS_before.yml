@@ -1,6 +1,6 @@
 # IWS_before.yml
 ---
-# FTA Limit状態記録と制限解除
+# MDM: record/release FTA WS limit, then unlink FTA
 - hosts: mdm_dev
   become: false
   gather_facts: no
@@ -13,12 +13,6 @@
         fta_target_ws: "{{ item }}"
       loop: "{{ groups['fta_ws'] }}"
 
-# FTA Agent Unlink
-- hosts: mdm_dev
-  become: false
-  gather_facts: no
-  any_errors_fatal: true
-  tasks:
     - name: FTA Unlink
       include_role:
         name: Workstation_control/fta_unlink
