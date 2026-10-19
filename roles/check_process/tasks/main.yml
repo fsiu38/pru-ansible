@@ -1,42 +1,10 @@
 ---
-- name: Identify configured groups
-  set_fact:
-    check_process_groups: "{{ group_names | intersect(process_by_group.keys() | list) }}"
-
-- name: Build expected process checks
-  set_fact:
-    expected_processes: >-
-      {{
-        (check_process_groups | map('extract', process_by_group) | list | flatten)
-        + host_processes + common_processes + extra_processes
-      }}
-
-- name: Reject empty process checks
-  assert:
-    that:
-      - expected_processes | length > 0
-    fail_msg: "No process checks configured for {{ inventory_hostname }} (groups={{ group_names }})"
-
-- name: Check configured processes
-  command:
-    argv:
-      - pgrep
-      - "{{ '-f' if (item.match | default('exact')) == 'cmdline' else '-x' }}"
-      - --
-      - "{{ item.name if item is mapping else item }}"
-  loop: "{{ expected_processes | unique | list }}"
-  loop_control:
-    label: "{{ item.name if item is mapping else item }}"
-  register: process_checks
+- name: check process status
+  shell: /prustaff/dsops/reboot/hanyo/check_process.sh
+  register: result
+  check_mode: false
   changed_when: false
-  failed_when: false
 
-- name: Fail if a process is missing
-  assert:
-    that:
-      - item.rc == 0
-    fail_msg: "Missing process on {{ inventory_hostname }}: {{ item.item.name if item.item is mapping else item.item }} (rc={{ item.rc }})"
-    success_msg: "Running: {{ item.item.name if item.item is mapping else item.item }}"
-  loop: "{{ process_checks.results }}"
-  loop_control:
-    label: "{{ item.item.name if item.item is mapping else item.item }}"
+- name: debug check_process
+  debug:
+    var: result.stdout_lines
