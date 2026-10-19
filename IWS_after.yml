@@ -1,100 +1,69 @@
 # IWS_after.yml
-
 ---
 # IWSFTA開始
 - hosts: fta_dev
   gather_facts: no
+  any_errors_fatal: true
   tasks:
-    - block:
-        - name: Start IWSFTA
-          include_role:
-            name: Workstation_control/start_iwsfta
-      rescue:
-        - name: Start IWSFTA failure
-          debug:
-            msg: "Start IWSFTA failed!"
-        - meta: end_play
+    - name: Start IWSFTA
+      include_role:
+        name: Workstation_control/start_iwsfta
 
-# FTA AgentとLink
+# FTA Agent Link
 - hosts: mdm_dev
   become: false
   gather_facts: no
+  any_errors_fatal: true
   tasks:
-    - block:
-        - name: FTA Link
-          include_role:
-            name: Workstation_control/fta_link
-          vars:
-            fta_target: "{{ item }}"
-          loop: "{{ groups['fta_ws'] }}"
-      rescue:
-        - name: FTA Link failure
-          debug:
-            msg: "FTA Link failed! ({{ ansible_failed_result.item | default('unknown') }})"
-        - meta: end_play
+    - name: FTA Link
+      include_role:
+        name: Workstation_control/fta_link
+      vars:
+        fta_target: "{{ item }}"
+      loop: "{{ groups['fta_ws'] }}"
 
 # IWSFTA Process Check
 - hosts: fta_dev
   become: false
   gather_facts: no
+  any_errors_fatal: true
   tasks:
-    - block:
-        - name: IWSFTA Process Check
-          include_role:
-            name: Workstation_control/fta_process_check
-      rescue:
-        - name: IWSFTA Process Check failure
-          debug:
-            msg: "IWSFTA Process Check failed!"
-        - meta: end_play
+    - name: IWSFTA Process Check
+      include_role:
+        name: Workstation_control/fta_process_check
 
 # IWSDA Process Check
 - hosts: da_dev
   become: false
   gather_facts: no
+  any_errors_fatal: true
   tasks:
-    - block:
-        - name: IWSDA Process Check
-          include_role:
-            name: Workstation_control/da_process_check
-      rescue:
-        - name: IWSDA Process Check failure
-          debug:
-            msg: "IWSDA Process Check failed!"
-        - meta: end_play
+    - name: IWSDA Process Check
+      include_role:
+        name: Workstation_control/da_process_check
 
 # FTA Limit状態を作業前に戻す
 - hosts: mdm_dev
   become: false
   gather_facts: no
+  any_errors_fatal: true
   tasks:
-    - block:
-        - name: Control IWSFTA WS Limit Control (After)
-          include_role:
-            name: Workstation_control/fta_ws_limit_control_after
-          vars:
-            fta_target_ws: "{{ item }}"
-          loop: "{{ groups['fta_ws'] }}"
-      rescue:
-        - name: Control IWSFTA WS Limit Control (After) failure
-          debug:
-            msg: "Control IWSFTA WS Limit Control (After) failed!"
-        - meta: end_play
+    - name: Control IWSFTA WS Limit Control (After)
+      include_role:
+        name: Workstation_control/fta_ws_limit_control_after
+      vars:
+        fta_target_ws: "{{ item }}"
+      loop: "{{ groups['fta_ws'] }}"
 
 # FTA RMSTDLIST実行
 - hosts: mdm_dev
   become: false
   gather_facts: no
+  any_errors_fatal: true
   tasks:
-    - block:
-        - name: RMSTDLISTの実行
-          include_role:
-            name: Workstation_control/after_fta_check
-          vars:
-            JSControl: "{{ item }}"
-          loop: "{{ IWSFTA_Aftercheck_JOB }}"
-      rescue:
-        - name: RMSTDLISTの実行 failure
-          ansible.builtin.fail:
-            msg: "RMSTDLISTの実行 failed! ({{ ansible_failed_result.item | default('unknown') }})"
-        - meta: end_play
+    - name: RMSTDLISTの実行
+      include_role:
+        name: Workstation_control/after_fta_check
+      vars:
+        JSControl: "{{ item }}"
+      loop: "{{ IWSFTA_Aftercheck_JOB }}"
