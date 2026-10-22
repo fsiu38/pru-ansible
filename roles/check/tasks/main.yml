@@ -1,0 +1,180 @@
+---
+- name: Define Tomcat patterns per server
+  set_fact:
+    tomcat_patterns:
+      vrgib40028:
+        - gibaceap
+        - gibcdaap
+        - gibcrwap
+        - gibcvsap
+        - gibechoregap
+        - gibfusionap
+        - gibglipsap
+        - gibhubclmsap
+        - gibhubeap
+        - gibhubehpsap
+        - gibhubesap
+        - gibhubsssap
+        - gibiwingwap
+        - gibkujoap
+        - giblconejdbcap
+        - gibmadoap
+        - gibmobcdaap
+        - gibmobcdmsap
+        - gibpgmapap
+        - gibportalap
+        - gibpplcdaap
+        - gibptcap
+        - gibsoapap
+        - gibsoapsap
+        - gibweblistap
+      vrgib40029:
+        - gibace2ap
+        - gibcda2ap
+        - gibcrw2ap
+        - gibcvs2ap
+        - gibechoreg2ap
+        - gibfusion2ap
+        - gibglips2ap
+        - gibhubclms2ap
+        - gibhube2ap
+        - gibhubehps2ap
+        - gibhubes2ap
+        - gibhubsss2ap
+        - gibiwingw2ap
+        - gibkujo2ap
+        - giblconejdbc2ap
+        - gibmado2ap
+        - gibmobcdms2ap
+        - gibpgmap2ap
+        - gibportal2ap
+        - gibpplcda2ap
+        - gibptc2ap
+        - gibweblist2ap
+      vrgib40080:
+        - gibaceap
+        - gibcdaap
+        - gibcrwap
+        - gibcvsap
+        - gibechoregap
+        - gibfusionap
+        - gibglipsap
+        - gibhubclmsap
+        - gibhubeap
+        - gibhubehpsap
+        - gibhubesap
+        - gibhubsssap
+        - gibiwingwap
+        - gibkujoap
+        - giblconejdbcap
+        - gibmadoap
+        - gibmobcdaap
+        - gibmobcdmsap
+        - gibpgmapap
+        - gibportalap
+        - gibpplcdaap
+        - gibptcap
+        - gibsoapap
+        - gibsoapsap
+        - gibweblistap
+      vrgib40081:
+        - gibaceap
+        - gibcrwap
+        - gibcvsap
+        - gibechoregap
+        - gibfusionap
+        - gibglipsap
+        - gibhubclmsap
+        - gibhubeap
+        - gibhubehpsap
+        - gibhubesap
+        - gibhubsssap
+        - gibiwingwap
+        - gibkujoap
+        - giblconejdbcap
+        - gibmadoap
+        - gibmobcdaap
+        - gibmobcdmsap
+        - gibpgmapap
+        - gibportalap
+        - gibpplcdaap
+        - gibptcap
+        - gibsoapsap
+        - gibweblistap
+- name: Check Tomcat status before start
+  shell: >
+    ps -ef | grep java |
+    grep -E '{{ tomcat_patterns[inventory_hostname] | join("|") }}' |
+    grep -v grep || true
+  register: tomcat_before
+  changed_when: false
+  failed_when: false
+
+- name: Display Tomcat status before start
+  debug:
+    msg:
+      - "***** Tomcat Status Before Start *****"
+      - "{{ tomcat_before.stdout_lines | default([]) }}"
+
+- name: Get Tomcat instance names
+  shell: "/tools/tomcat/tomcat_start.sh | grep {{ item }} | awk '{print $NF}'"
+  loop: "{{ tomcat_patterns[inventory_hostname] }}"
+  register: tomcat_instance_names
+  changed_when: false
+  failed_when: false
+
+- name: Display Tomcat instance names
+  debug:
+    msg:
+      - "{{ item.item }}"
+      - "{{ item.stdout }}"
+  loop: "{{ tomcat_instance_names.results }}"
+  when:
+    - item.stdout | length > 0
+
+- name: Tomcat起動 D&B shell
+  shell: "/tools/tomcat/tomcat_start.sh {{ item.stdout }}"
+  environment:
+    LC_ALL: C
+  loop: "{{ tomcat_instance_names.results }}"
+  register: result_start_tomcat
+  failed_when: false
+  when:
+    - item.stdout | length > 0
+
+- name: Display start tomcat result
+  debug:
+    msg:
+      - "==== {{ item.item.stdout | default('UNKNOWN') }} ===="
+      - "{{ item.stdout_lines | default(['no output']) }}"
+  loop: "{{ result_start_tomcat.results | default([]) }}"
+  when:
+    - result_start_tomcat is defined
+
+- name: Check Tomcat status after start
+  shell: >
+    ps -ef | grep java |
+    grep -E '{{ tomcat_patterns[inventory_hostname] | join("|") }}' |
+    grep -v grep || true
+  register: tomcat_after
+  changed_when: false
+  failed_when: false
+
+- name: Display Tomcat status after start
+  debug:
+    msg:
+      - "***** Tomcat Status After Start *****"
+      - "{{ tomcat_after.stdout_lines | default([]) }}"
+
+- name: Verify Tomcat instances are started
+  fail:
+    msg: "Tomcat instance {{ item }} is NOT running."
+  when:
+    - item not in (tomcat_after.stdout | default(''))
+  loop: "{{ tomcat_patterns[inventory_hostname] }}"
+
+- name: Tomcat started successfully
+  debug:
+    msg: "All Tomcat instances are running."
+  when:
+    - tomcat_after.stdout_lines | length > 0
