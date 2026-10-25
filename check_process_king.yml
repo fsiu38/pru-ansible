@@ -1,9 +1,7 @@
 ---
-- name: Check process status for selected maintenance phase
+- name: Check process status (optionally validate a maintenance phase)
   hosts: all
   gather_facts: false
   become: true
-  vars:
-    check_phase: before
   roles:
     - check_process_king
