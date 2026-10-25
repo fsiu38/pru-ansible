@@ -1,6 +1,8 @@
 ---
-# TODO: Implement Backup for the OS patch workflow.
-# Placeholder only. Do not enable in Tower until implemented and tested.
+# 用途：預留 OS Patch 前 Backup 工作步驟。
+# 目前狀態：尚未實作 Backup；執行時會刻意 fail，防止誤當備份成功。
+# 注意：未完成及測試前，唔好用作正式備份。
+
 - name: Backup (not implemented)
   hosts: localhost
   gather_facts: no
