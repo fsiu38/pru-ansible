@@ -1,5 +1,9 @@
 ---
-# Define per-host process lists in inventory host_vars/group_vars.
-# Example: before_check_process: {app01: ['process_a', 'process_b']}
-before_check_process: {}
+# Configure per host in host_vars or group_vars.
+# process_checks:
+#   dmgr: {before: up, during: down, after: up}
+#   nodeagent: {before: up, during: down, after: up}
+#   "xpopserver stat": {before: up, after: up}
+process_checks: {}
+check_phase: before
 check_process_king_script: /prustaff/dsops/reboot/hanyo/check_process.sh
