@@ -1,7 +1,8 @@
 ---
-# OS Patch workflow job (placeholder).
-# The actual OS patch implementation has not been provided.
-# Do not enable this Job Template in production until implemented and tested.
+# 用途：預留 OS Patch 更新工作步驟。
+# 目前狀態：未提供實際 Patch 指令；執行時會刻意 fail，防止誤當 Patch 成功。
+# 注意：未實作及測試前，唔好放入正式 OS Patch Workflow。
+
 - name: OS Patch (not implemented)
   hosts: localhost
   gather_facts: no
