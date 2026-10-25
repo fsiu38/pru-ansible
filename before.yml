@@ -1,4 +1,8 @@
 ---
+# 用途：OS Patch 前記錄目標 Server 嘅 Kernel 狀態，並檢查預期 Process。
+# 執行內容：uname -a → 寫入 ~/tmp_os_before.txt → 顯示 Kernel → 呼叫原有 check_process Role。
+# 注意：會喺目標機寫入檔案；此處使用 check_process，唔係 check_process_king。
+
 - name: Record system state before OS patching
   hosts: all
   gather_facts: false
