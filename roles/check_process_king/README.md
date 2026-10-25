@@ -1,26 +1,52 @@
 # check_process_king
 
-Read-only per-host process checks (Ansible 2.9 compatible).
+Ansible 2.9-compatible test role for three maintenance phases.
 
-Set `before_check_process` in inventory variables:
+## Configuration: Server -> Phase -> Status
 
 ```yaml
-before_check_process:
-  app01:
-    - process_a
-    - "xpopserver stat"
+process_checks:
+  server01:
+    before:
+      up:
+        - dmgr
+        - nodeagent
+      down:
+        - "啟動中"
+    during:
+      down:
+        - dmgr
+        - nodeagent
+    after:
+      up:
+        - dmgr
+        - nodeagent
+        - "啟動中"
+  server02:
+    before:
+      up:
+        - "xpopserver stat"
+    after:
+      up:
+        - "xpopserver stat"
 ```
 
-The quoted entry with a space is **one list item**, passed as **one shell argument**
-because the task uses `{{ item | quote }}`. The script must accept that
-entire string as its first argument, rather than expecting two arguments.
+`before`, `during`, `after` are phases. `up` means the
+expected text should appear; `down` means it should not appear.
+Missing hosts, phases, or statuses are skipped.
 
-Invoke with `roles: [check_process_king]`. Unlisted hosts are skipped.
-Verify the script accepts an argument and is read-only before use.
-`check_mode: false` intentionally runs it even under Ansible check mode.
+Call the role with `check_phase: before` (or `during` / `after`).
+Store real server definitions in inventory `host_vars` / `group_vars`
+instead of this public repository.
 
-Results are registered as `before_check_process_result`; failures are recorded
-but do not fail the play (`failed_when: false`). Review `rc` and `stdout`.
-This is a testing role, not a production gate.
+**Current limitation:** The role runs `check_process.sh '<entry>'`
+for each configured string, and registers output in
+`check_process_king_result`. It does **not yet enforce** up/down
+expectations. Verify whether the script accepts one quoted argument,
+what its stdout contains, and its exit-code conventions first.
+A missing string must not be treated as a successful DOWN check
+when the script itself fails.
 
-No internal server names are committed because this repository is public.
+`check_mode: false` runs the script even under Ansible check mode.
+Use only with a read-only script. Do not use this test role as a
+production maintenance gate yet.
