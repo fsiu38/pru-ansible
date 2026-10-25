@@ -1,6 +1,5 @@
 ---
-# Server -> phase -> expected status -> output strings.
-# Define in inventory variables, not in this public role.
 process_checks: {}
-check_phase: before
+# Empty means display raw process listing without phase assertions.
+check_phase: ""
 check_process_king_script: /prustaff/dsops/reboot/hanyo/check_process.sh
