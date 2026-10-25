@@ -1,0 +1,12 @@
+---
+- name: Run check_process.sh for processes defined for this host
+  shell: "{{ check_process_king_script | quote }} {{ item | quote }}"
+  args:
+    executable: /bin/sh
+  loop: "{{ before_check_process.get(inventory_hostname, []) }}"
+  loop_control:
+    label: "{{ item }}"
+  register: before_check_process_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
