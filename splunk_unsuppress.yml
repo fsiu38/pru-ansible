@@ -1,6 +1,8 @@
 ---
-# TODO: Implement Splunk Unsuppress for the OS patch workflow.
-# Placeholder only. Do not enable in Tower until implemented and tested.
+# 用途：預留 OS Patch 後恢復 Splunk 告警／監控嘅工作步驟。
+# 目前狀態：未實作 Unsuppress；執行時會刻意 fail。
+# 注意：唔會真正修改 Splunk 設定。
+
 - name: Splunk Unsuppress (not implemented)
   hosts: localhost
   gather_facts: no
