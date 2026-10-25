@@ -1,8 +1,12 @@
 # check_process_king
 
-Ansible 2.9-compatible test role for three maintenance phases.
+Ansible 2.9-compatible role. Only `tasks/main.yml` is needed; no `defaults/main.yml`.
 
-## Configuration: Server -> Phase -> Status
+## Usage
+
+Without `check_phase`: run `/prustaff/dsops/reboot/hanyo/check_process.sh` once per targeted host and display stdout. Nonzero exit status fails the play.
+
+With `check_phase: before`, `during`, or `after`: match strings in stdout based on server-specific `process_checks`. Missing host/phase/up/down entries are skipped (including the script when there are no checks).
 
 ```yaml
 process_checks:
@@ -21,32 +25,21 @@ process_checks:
       up:
         - dmgr
         - nodeagent
-        - "啟動中"
-  server02:
-    before:
-      up:
-        - "xpopserver stat"
-    after:
-      up:
-        - "xpopserver stat"
 ```
 
-`before`, `during`, `after` are phases. `up` means the
-expected text should appear; `down` means it should not appear.
-Missing hosts, phases, or statuses are skipped.
+- `up`: string must appear in stdout.
+- `down`: string must not appear in stdout.
+- One script invocation per host/phase, regardless of number of entries.
+- Script exit failure or mismatched expected string fails the play.
+- `process_checks` may be supplied through inventory variables.
+- Optional `check_process_king_script` overrides the script path; absent means `/prustaff/dsops/reboot/hanyo/check_process.sh`.
+- The command runs under Ansible check mode too (`check_mode: false`); only use a read-only script.
 
-Call the role with `check_phase: before` (or `during` / `after`).
-Store real server definitions in inventory `host_vars` / `group_vars`
-instead of this public repository.
+Example:
 
-**Current limitation:** The role runs `check_process.sh '<entry>'`
-for each configured string, and registers output in
-`check_process_king_result`. It does **not yet enforce** up/down
-expectations. Verify whether the script accepts one quoted argument,
-what its stdout contains, and its exit-code conventions first.
-A missing string must not be treated as a successful DOWN check
-when the script itself fails.
+```bash
+ansible-playbook check_process_king.yml
+ansible-playbook check_process_king.yml -e check_phase=before
+```
 
-`check_mode: false` runs the script even under Ansible check mode.
-Use only with a read-only script. Do not use this test role as a
-production maintenance gate yet.
+Not yet verified against actual script output or a Tower host.
