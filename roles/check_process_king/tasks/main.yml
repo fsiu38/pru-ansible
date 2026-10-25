@@ -1,35 +1,33 @@
 ---
-- name: Validate requested check phase
+- name: Validate requested phase
   assert:
     that:
       - check_phase in ['before', 'during', 'after']
-    fail_msg: "check_phase must be before, during, or after"
 
-- name: Reset phase checks
+- name: Select this host's phase checks
   set_fact:
-    check_process_king_items: []
+    check_process_king_up: "{{ process_checks.get(inventory_hostname, {}).get(check_phase, {}).get('up', []) }}"
+    check_process_king_down: "{{ process_checks.get(inventory_hostname, {}).get(check_phase, {}).get('down', []) }}"
 
-- name: Build expected UP checks
-  set_fact:
-    check_process_king_items: "{{ check_process_king_items + [{'name': item, 'state': 'up'}] }}"
-  loop: "{{ process_checks.get(inventory_hostname, {}).get(check_phase, {}).get('up', []) }}"
-
-- name: Build expected DOWN checks
-  set_fact:
-    check_process_king_items: "{{ check_process_king_items + [{'name': item, 'state': 'down'}] }}"
-  loop: "{{ process_checks.get(inventory_hostname, {}).get(check_phase, {}).get('down', []) }}"
-
-- name: Run checks for selected server and phase
-  shell: "{{ check_process_king_script | quote }} {{ item.name | quote }}"
-  args:
-    executable: /bin/sh
-  loop: "{{ check_process_king_items }}"
-  loop_control:
-    label: "{{ item.name }} (expected {{ item.state }})"
+- name: Run process listing once when checks exist
+  command: "{{ check_process_king_script }}"
   register: check_process_king_result
   changed_when: false
-  failed_when: false
   check_mode: false
+  when: (check_process_king_up | length + check_process_king_down | length) > 0
 
-# This is a test-only runner. The script's output and return-code
-# contract must be confirmed before implementing an up/down failure gate.
+- name: Assert required output strings are present
+  assert:
+    that:
+      - item in check_process_king_result.stdout
+    fail_msg: "Missing required process text: {{ item }}"
+  loop: "{{ check_process_king_up }}"
+  when: (check_process_king_up | length + check_process_king_down | length) > 0
+
+- name: Assert forbidden output strings are absent
+  assert:
+    that:
+      - item not in check_process_king_result.stdout
+    fail_msg: "Unexpected running process text: {{ item }}"
+  loop: "{{ check_process_king_down }}"
+  when: (check_process_king_up | length + check_process_king_down | length) > 0
