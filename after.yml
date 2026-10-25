@@ -1,4 +1,8 @@
 ---
+# 用途：OS Patch 後核對系統狀態。
+# 執行內容：讀取目標機之前保存嘅 Kernel 資料、執行 uname -a、顯示前後差異，再呼叫原有 check_process Role。
+# 注意：Kernel 差異只會顯示，唔會因為相同／不同而自動判定失敗；此處並非 check_process_king。
+
 - name: Compare system state after OS patching
   hosts: all
   gather_facts: false
