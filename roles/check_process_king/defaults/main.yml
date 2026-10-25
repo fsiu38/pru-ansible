@@ -1,0 +1,5 @@
+---
+# Define per-host process lists in inventory host_vars/group_vars.
+# Example: before_check_process: {app01: ['process_a', 'process_b']}
+before_check_process: {}
+check_process_king_script: /prustaff/dsops/reboot/hanyo/check_process.sh
