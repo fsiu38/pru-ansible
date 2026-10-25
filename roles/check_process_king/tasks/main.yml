@@ -5,21 +5,25 @@
       - check_phase in ['before', 'during', 'after']
     fail_msg: "check_phase must be before, during, or after"
 
-- name: Reset checks for selected phase
+- name: Reset phase checks
   set_fact:
     check_process_king_items: []
 
-- name: Build checks for selected phase
+- name: Build expected UP checks
   set_fact:
-    check_process_king_items: "{{ (check_process_king_items | default([])) + [{'name': item.key, 'state': item.value[check_phase]}] }}"
-  loop: "{{ process_checks | dict2items }}"
-  when: check_phase in item.value
+    check_process_king_items: "{{ check_process_king_items + [{'name': item, 'state': 'up'}] }}"
+  loop: "{{ process_checks.get(inventory_hostname, {}).get(check_phase, {}).get('up', []) }}"
 
-- name: Run process status check for selected phase
+- name: Build expected DOWN checks
+  set_fact:
+    check_process_king_items: "{{ check_process_king_items + [{'name': item, 'state': 'down'}] }}"
+  loop: "{{ process_checks.get(inventory_hostname, {}).get(check_phase, {}).get('down', []) }}"
+
+- name: Run checks for selected server and phase
   shell: "{{ check_process_king_script | quote }} {{ item.name | quote }}"
   args:
     executable: /bin/sh
-  loop: "{{ check_process_king_items | default([]) }}"
+  loop: "{{ check_process_king_items }}"
   loop_control:
     label: "{{ item.name }} (expected {{ item.state }})"
   register: check_process_king_result
@@ -27,5 +31,5 @@
   failed_when: false
   check_mode: false
 
-# Status evaluation depends on the script's actual stdout/exit-code contract.
-# Until verified, this role records results only and must not gate service stops.
+# This is a test-only runner. The script's output and return-code
+# contract must be confirmed before implementing an up/down failure gate.
