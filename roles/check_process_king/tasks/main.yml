@@ -1,12 +1,27 @@
 ---
-- name: Run check_process.sh for processes defined for this host
-  shell: "{{ check_process_king_script | quote }} {{ item | quote }}"
+- name: Validate requested check phase
+  assert:
+    that:
+      - check_phase in ['before', 'during', 'after']
+    fail_msg: "check_phase must be before, during, or after"
+
+- name: Build checks for selected phase
+  set_fact:
+    check_process_king_items: "{{ (check_process_king_items | default([])) + [{'name': item.key, 'state': item.value[check_phase]}] }}"
+  loop: "{{ process_checks | dict2items }}"
+  when: check_phase in item.value
+
+- name: Run process status check for selected phase
+  shell: "{{ check_process_king_script | quote }} {{ item.name | quote }}"
   args:
     executable: /bin/sh
-  loop: "{{ before_check_process.get(inventory_hostname, []) }}"
+  loop: "{{ check_process_king_items | default([]) }}"
   loop_control:
-    label: "{{ item }}"
-  register: before_check_process_result
+    label: "{{ item.name }} (expected {{ item.state }})"
+  register: check_process_king_result
   changed_when: false
   failed_when: false
   check_mode: false
+
+# Status evaluation depends on the script's actual stdout/exit-code contract.
+# Until verified, this role records results only and must not gate service stops.
