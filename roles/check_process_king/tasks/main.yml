@@ -1,4 +1,16 @@
 ---
+# Example only: replace server01 with an actual inventory hostname before testing.
+- name: Define example before-phase process checks
+  set_fact:
+    check_process_king_examples:
+      server01:
+        before:
+          up:
+            - dmgr
+            - nodeagent
+          down:
+            - "啟動中"
+
 - name: Validate phase when supplied
   assert:
     that:
@@ -7,8 +19,8 @@
 
 - name: Select phase checks or empty lists
   set_fact:
-    check_process_king_up: "{{ (process_checks | default({})).get(inventory_hostname, {}).get(check_phase | default(''), {}).get('up', []) if (check_phase | default('') | length) > 0 else [] }}"
-    check_process_king_down: "{{ (process_checks | default({})).get(inventory_hostname, {}).get(check_phase | default(''), {}).get('down', []) if (check_phase | default('') | length) > 0 else [] }}"
+    check_process_king_up: "{{ (process_checks | default(check_process_king_examples)).get(inventory_hostname, {}).get(check_phase | default(''), {}).get('up', []) if (check_phase | default('') | length) > 0 else [] }}"
+    check_process_king_down: "{{ (process_checks | default(check_process_king_examples)).get(inventory_hostname, {}).get(check_phase | default(''), {}).get('down', []) if (check_phase | default('') | length) > 0 else [] }}"
 
 - name: Run process listing once (raw mode or configured phase checks)
   command: "{{ check_process_king_script | default('/prustaff/dsops/reboot/hanyo/check_process.sh') }}"
