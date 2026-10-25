@@ -1,5 +1,18 @@
 ---
-- name: Check process status (optionally validate a maintenance phase)
+# 用途：
+# 1. 冇指定 check_phase：直接執行 check_process.sh，顯示 Process 清單。
+# 2. 指定 check_phase=before/during/after：按目前 Server 對應階段嘅 up/down 清單驗證。
+# 3. 冇定義 Server、階段或檢查項目：跳過該階段檢查。
+# 4. 檢查腳本失敗或 Process 狀態唔符合預期：Playbook 失敗。
+#
+# 普通執行：
+#   ansible-playbook check_process_king.yml
+#
+# 指定階段：
+#   ansible-playbook check_process_king.yml -e check_phase=before
+#
+# 注意：實際 Server 清單目前只有示例；執行前請確認 Inventory 與 Process 名稱。
+- name: 檢查 Process 狀態（可選擇維護階段驗證）
   hosts: all
   gather_facts: false
   become: true
