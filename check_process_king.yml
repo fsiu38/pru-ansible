@@ -1,17 +1,14 @@
 ---
-# 用途：
-# 1. 冇指定 check_phase：直接執行 check_process.sh，顯示 Process 清單。
-# 2. 指定 check_phase=before/during/after：按目前 Server 對應階段嘅 up/down 清單驗證。
-# 3. 冇定義 Server、階段或檢查項目：跳過該階段檢查。
-# 4. 檢查腳本失敗或 Process 狀態唔符合預期：Playbook 失敗。
-#
-# 普通執行：
-#   ansible-playbook check_process_king.yml
-#
-# 指定階段：
-#   ansible-playbook check_process_king.yml -e check_phase=before
-#
-# 注意：實際 Server 清單目前只有示例；執行前請確認 Inventory 與 Process 名稱。
+# 用途：統一執行 check_process_king Role，檢查 Server 上嘅 Process。
+# 冇指定 check_phase：直接執行 check_process.sh，顯示完整 stdout。
+# 指定 check_phase=before/during/after：按目前 Server 對應階段嘅 up/down 清單驗證。
+# up：指定文字必須出現；down：指定文字必須唔出現。
+# 冇定義 Server／階段／檢查項目：跳過該階段檢查。
+# 有執行腳本而腳本失敗，或 Process 文字唔符合預期：FAIL。
+# 普通執行：ansible-playbook check_process_king.yml
+# 指定階段：ansible-playbook check_process_king.yml -e check_phase=before
+# 注意：目前 tasks/main.yml 只有示例 Server List，未加入真實環境完整設定。
+
 - name: 檢查 Process 狀態（可選擇維護階段驗證）
   hosts: all
   gather_facts: false
