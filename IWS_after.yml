@@ -1,4 +1,7 @@
-# IWS_after.yml
+---
+# 用途：OS Patch 完成後，依序恢復 IWSFTA、重新連結 FTA、檢查 FTA/DA Process、恢復 WS Limit，最後執行 RMSTDLIST 檢查。
+# 執行對象：fta_dev、mdm_dev、da_dev；實際操作透過 Workstation_control 相關 Role。
+# 注意：部分步驟失敗會進入 rescue，並使用 end_play 結束目前 Play；請留意 Workflow 後續行為。
 
 ---
 # IWSFTA開始
