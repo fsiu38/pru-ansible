@@ -1,4 +1,7 @@
-# IWS_before.yml
+---
+# 用途：OS Patch 前嘅 IWS 停機準備。
+# 執行順序：由 mdm_dev 記錄／調整 FTA WS Limit → FTA Unlink → 喺 fta_dev 停止 IWSFTA。
+# 注意：任何 block 失敗會進入 rescue，執行 fail；本 Playbook 會實際改變 IWS/FTA 狀態。
 
 ---
 #IWS FTA Test Linux 前 OSパッチ前作業 FTA Limit状態記録と制限解除へ
