@@ -5,6 +5,10 @@
       - check_phase in ['before', 'during', 'after']
     fail_msg: "check_phase must be before, during, or after"
 
+- name: Reset checks for selected phase
+  set_fact:
+    check_process_king_items: []
+
 - name: Build checks for selected phase
   set_fact:
     check_process_king_items: "{{ (check_process_king_items | default([])) + [{'name': item.key, 'state': item.value[check_phase]}] }}"
