@@ -1,9 +1,6 @@
 ---
-# Configure per host in host_vars or group_vars.
-# process_checks:
-#   dmgr: {before: up, during: down, after: up}
-#   nodeagent: {before: up, during: down, after: up}
-#   "xpopserver stat": {before: up, after: up}
+# Server -> phase -> expected status -> output strings.
+# Define in inventory variables, not in this public role.
 process_checks: {}
 check_phase: before
 check_process_king_script: /prustaff/dsops/reboot/hanyo/check_process.sh
