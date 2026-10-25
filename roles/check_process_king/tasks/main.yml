@@ -1,20 +1,26 @@
 ---
-- name: Validate requested phase
+- name: Validate phase when supplied
   assert:
     that:
-      - check_phase in ['before', 'during', 'after']
+      - check_phase in ['', 'before', 'during', 'after']
+    fail_msg: "check_phase must be empty, before, during, or after"
 
-- name: Select this host's phase checks
+- name: Select phase checks or empty lists
   set_fact:
-    check_process_king_up: "{{ process_checks.get(inventory_hostname, {}).get(check_phase, {}).get('up', []) }}"
-    check_process_king_down: "{{ process_checks.get(inventory_hostname, {}).get(check_phase, {}).get('down', []) }}"
+    check_process_king_up: "{{ process_checks.get(inventory_hostname, {}).get(check_phase, {}).get('up', []) if check_phase | length > 0 else [] }}"
+    check_process_king_down: "{{ process_checks.get(inventory_hostname, {}).get(check_phase, {}).get('down', []) if check_phase | length > 0 else [] }}"
 
-- name: Run process listing once when checks exist
+- name: Run process listing once (raw mode or configured phase checks)
   command: "{{ check_process_king_script }}"
   register: check_process_king_result
   changed_when: false
   check_mode: false
-  when: (check_process_king_up | length + check_process_king_down | length) > 0
+  when: check_phase | length == 0 or (check_process_king_up | length + check_process_king_down | length) > 0
+
+- name: Display process listing in raw mode
+  debug:
+    var: check_process_king_result.stdout_lines
+  when: check_phase | length == 0
 
 - name: Assert required output strings are present
   assert:
@@ -22,7 +28,7 @@
       - item in check_process_king_result.stdout
     fail_msg: "Missing required process text: {{ item }}"
   loop: "{{ check_process_king_up }}"
-  when: (check_process_king_up | length + check_process_king_down | length) > 0
+  when: check_phase | length > 0
 
 - name: Assert forbidden output strings are absent
   assert:
@@ -30,4 +36,4 @@
       - item not in check_process_king_result.stdout
     fail_msg: "Unexpected running process text: {{ item }}"
   loop: "{{ check_process_king_down }}"
-  when: (check_process_king_up | length + check_process_king_down | length) > 0
+  when: check_phase | length > 0
