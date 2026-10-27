@@ -1,0 +1,32 @@
+---
+# One reusable role for API, COMMON and FRONT.
+- name: Validate Tomcat target
+  assert:
+    that:
+      - tomcat_target is defined
+      - tomcat_target in ['API', 'COMMON', 'FRONT']
+    fail_msg: "tomcat_target must be API, COMMON or FRONT"
+
+# Original API/COMMON command deliberately continued even if the preliminary
+# stop failed (semicolon-separated shell commands). FRONT failed on stop errors.
+- name: "Stop Tomcat {{ tomcat_target }} before start"
+  shell: "/tools/tomcat/tomcat_stop.sh {{ tomcat_target }}"
+  register: tomcat_prestart_stop
+  failed_when: tomcat_target == 'FRONT' and tomcat_prestart_stop.rc != 0
+
+- name: Show FRONT preliminary stop output
+  debug:
+    var: tomcat_prestart_stop.stdout_lines
+  when: tomcat_target == 'FRONT'
+
+- name: Wait 10 seconds before start
+  pause:
+    seconds: 10
+
+- name: "Start Tomcat {{ tomcat_target }}"
+  shell: "/tools/tomcat/tomcat_start.sh {{ tomcat_target }}"
+  register: tomcat_start_result
+
+- name: Show Tomcat start result
+  debug:
+    var: tomcat_start_result.stdout_lines
