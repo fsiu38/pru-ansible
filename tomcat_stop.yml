@@ -1,0 +1,10 @@
+---
+# One Tower Job Template can use this playbook with a Survey/extra var:
+# tomcat_target: API | COMMON | FRONT
+- name: Stop selected Tomcat component
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Stop selected component
+      include_role:
+        name: tomcat_stop
