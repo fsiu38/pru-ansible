@@ -1,0 +1,19 @@
+---
+# Three distinct plays, same reusable role, different inventory groups.
+- hosts: tomcat_front
+  gather_facts: false
+  roles:
+    - role: tomcat_start
+      tomcat_target: FRONT
+
+- hosts: tomcat_common
+  gather_facts: false
+  roles:
+    - role: tomcat_start
+      tomcat_target: COMMON
+
+- hosts: tomcat_api
+  gather_facts: false
+  roles:
+    - role: tomcat_start
+      tomcat_target: API
