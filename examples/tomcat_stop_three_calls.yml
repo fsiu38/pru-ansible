@@ -1,0 +1,25 @@
+---
+# Three explicitly separate calls using the same role.
+# In one play, Ansible's default failure behavior stops further tasks
+# for that host. Use separate Job Templates for failure isolation.
+- name: Demonstrate three independent role calls
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Stop Tomcat API
+      include_role:
+        name: tomcat_stop
+      vars:
+        tomcat_target: API
+
+    - name: Stop Tomcat COMMON
+      include_role:
+        name: tomcat_stop
+      vars:
+        tomcat_target: COMMON
+
+    - name: Stop Tomcat FRONT
+      include_role:
+        name: tomcat_stop
+      vars:
+        tomcat_target: FRONT
