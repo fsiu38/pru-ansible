@@ -1,0 +1,9 @@
+---
+# Run one Tomcat target per Tower Job Template.
+# Set tomcat_target to API, COMMON or FRONT in extra vars/Survey.
+# Use the Tower Limit field to select the appropriate inventory group.
+- name: Start selected Tomcat component
+  hosts: all
+  gather_facts: false
+  roles:
+    - role: tomcat_start
