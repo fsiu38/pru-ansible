@@ -1,0 +1,16 @@
+---
+# Shared role: pass tomcat_target as API, COMMON, or FRONT.
+- name: Validate Tomcat target
+  assert:
+    that:
+      - tomcat_target is defined
+      - tomcat_target in ['API', 'COMMON', 'FRONT']
+    fail_msg: "tomcat_target must be API, COMMON, or FRONT"
+
+- name: "Stop Tomcat {{ tomcat_target }}"
+  shell: "./tools/tomcat/tomcat_stop.sh {{ tomcat_target }}"
+  register: tomcat_stop_result
+
+- name: "Show Tomcat {{ tomcat_target }} output"
+  debug:
+    var: tomcat_stop_result.stdout_lines
