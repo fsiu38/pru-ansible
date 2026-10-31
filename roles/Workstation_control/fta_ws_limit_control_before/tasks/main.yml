@@ -1,0 +1,66 @@
+# FTA Limit状態を作業前に変更し、状態を記録する
+- name: FTAの状態確認（Before）
+  shell: |
+    {{ tws_env_load }} && {{ conman_cmd }} "sc {{ fta_target_ws }}" |& grep -i {{ fta_target_ws }} | grep -v "%sc"
+  register: fta_status_before
+
+- name: FTA LIMIT値取得（Before）
+  set_fact:
+    fta_limit_before_value: "{{ fta_status_before.stdout.split()[4] }}"
+
+- name: FTA LIMIT値Artifact保存定義
+  set_fact:
+    fta_limit_before: >-
+      {{
+        fta_limit_before | default({}) |
+        combine(
+          {fta_target_ws: fta_limit_before_value}
+        )
+      }}
+
+- name: FTA LIMIT値Artifact保存
+  set_stats:
+    data:
+      fta_limit_before: "{{ fta_limit_before }}"
+
+- name: FTAの状態表示（Before）
+  debug:
+    msg: "{{ fta_target_ws }} LIMIT={{ fta_limit_before_value }}"
+
+- name: FTAの制限を0にする
+  shell: |
+    {{ tws_env_load }} && {{ conman_cmd }} "lc {{ fta_target_ws }};0" |& awk '/^%/,0'
+  register: fta_limit_change
+
+- name: FTAの制限を0にした実行結果表示
+  debug:
+    var: fta_limit_change.stdout_lines
+
+- name: FTAの状態確認（Tmp）
+  shell: |
+    {{ tws_env_load }} && {{ conman_cmd }} "sc {{ fta_target_ws }}" |& awk '/^%/,0' | grep -v "%sc"
+  register: fta_status_tmp
+
+- name: FTAの状態表示（Tmp）
+  debug:
+    var: fta_status_tmp.stdout_lines
+
+# 実行中のジョブストリームがある場合は待機
+- name: wait_jobstream
+  shell: |
+    {{ tws_env_load }} && {{ conman_cmd }} "ss {{ fta_target_ws }}#@+state=EXEC" |& grep -i {{ fta_target_ws }} | grep -v "%ss"
+  register: fta_job_status
+  changed_when: false
+  failed_when: false
+  until: (fta_job_status.stdout | trim) == ""
+  retries: 10
+  delay: 60
+
+- name: 実行中のジョブストリームがある場合は待機のDebug
+  debug:
+    var: fta_job_status.stdout_lines
+
+- name: ジョブストリームが終了しなかった時エラー表示
+  fail:
+    msg: "{{ fta_target_ws }} が 10分待機後も実行中です"
+  when: fta_job_status.stdout_lines | length > 0
