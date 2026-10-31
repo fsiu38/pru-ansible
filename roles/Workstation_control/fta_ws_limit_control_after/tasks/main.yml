@@ -1,0 +1,31 @@
+# FTA Limit状態を作業前に戻す
+- name: FTAの状態確認（Tmp）
+  shell: |
+    {{ tws_env_load }} && {{ conman_cmd }} "sc {{ fta_target_ws }}" |& awk '/^%/,0' | grep -v "%sc"
+  register: fta_status_tmp
+
+- name: FTAの状態表示（Tmp）
+  debug:
+    var: fta_status_tmp.stdout_lines
+
+- name: FTAの制限を元に戻す
+  shell: |
+    {{ tws_env_load }} && {{ conman_cmd }} "lc {{ fta_target_ws }};{{ fta_limit_before[ fta_target_ws ] }}" |& awk '/^%/,0'
+  register: fta_limit_after
+
+- name: FTAのLimit変更コマンド確認
+  debug:
+    var: fta_limit_after.stdout_lines
+
+- name: "5秒pauseする"
+  pause:
+    seconds: 5
+
+- name: FTAの状態確認（After）
+  shell: |
+    {{ tws_env_load }} && {{ conman_cmd }} "sc {{ fta_target_ws }}" |& awk '/^%/,0' | grep -v "%sc"
+  register: fta_status_after
+
+- name: FTAの状態表示（After）
+  debug:
+    var: fta_status_after
